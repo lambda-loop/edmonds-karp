@@ -1,71 +1,61 @@
-const std = @import("std");
-const Io = std.Io;
 
-const edmonds_karp = @import("edmonds_karp");
+const std         = @import("std");
+const Graph = @import("Graph.zig").Graph;
+const NetworkFlow = @import("NetworkFlow").NetworkFlow;
 
-pub fn main(init: std.process.Init) !void {
-    // Prints to stderr, unbuffered, ignoring potential errors.
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
 
-    // This is appropriate for anything that lives as long as the process.
-    const arena: std.mem.Allocator = init.arena.allocator();
+fn homeworkGraph (allocator: std.mem.Allocator) NetworkFlow {
+    var network_flow = NetworkFlow(u8).init(allocator, 's', 't');
+    for ('A'..'J') |C| try network_flow.addNode(C);
 
-    // Accessing command line arguments:
-    const args = try init.minimal.args.toSlice(arena);
-    for (args) |arg| {
-        std.log.info("arg: {s}", .{arg});
-    }
+    // from s:
+    try network_flow.addEdge('s', .{ 0, 7 } ,'A');
+    try network_flow.addEdge('s', .{ 0, 2 } ,'B');
+    try network_flow.addEdge('s', .{ 0, 1 } ,'C');
 
-    // In order to do I/O operations need an `Io` instance.
-    const io = init.io;
+    // from A: 
+    try network_flow.addEdge('A', .{ 0, 2 } ,'D');
+    try network_flow.addEdge('A', .{ 0, 4 } ,'E');
+    try network_flow.addEdge('A', .{ 0, 5 } ,'B');
 
-    // Stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_file_writer: Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
-    const stdout_writer = &stdout_file_writer.interface;
+    
+    // from B: 
+    try network_flow.addEdge('B', .{ 0, 5 } ,'E');
+    try network_flow.addEdge('B', .{ 0, 6 } ,'F');
 
-    try edmonds_karp.printAnotherMessage(stdout_writer);
+    // .. 
 
-    try stdout_writer.flush(); // Don't forget to flush!
 }
 
-test "simple test" {
-    const gpa = std.testing.allocator;
-    var list: std.ArrayList(i32) = .empty;
-    defer list.deinit(gpa); // Try commenting this out and see if zig detects the memory leak!
-    try list.append(gpa, 42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
+// the Edge type talks about what the edges cares other the two nodes
+// in between it
 
-test "fuzz example" {
-    try std.testing.fuzz({}, testOne, .{});
-}
+// for testing
+pub fn main() !void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
 
-fn testOne(context: void, smith: *std.testing.Smith) !void {
-    _ = context;
-    // Try passing `--fuzz` to `zig build test` and see if it manages to fail this test case!
+    const allocator = arena.allocator();
+    var graph = Graph(u32, f64).init(allocator);
+    defer graph.deinit();
 
-    const gpa = std.testing.allocator;
-    var list: std.ArrayList(u8) = .empty;
-    defer list.deinit(gpa);
-    while (!smith.eos()) switch (smith.value(enum { add_data, dup_data })) {
-        .add_data => {
-            const slice = try list.addManyAsSlice(gpa, smith.value(u4));
-            smith.bytes(slice);
-        },
-        .dup_data => {
-            if (list.items.len == 0) continue;
-            if (list.items.len > std.math.maxInt(u32)) return error.SkipZigTest;
-            const len = smith.valueRangeAtMost(u32, 1, @min(32, list.items.len));
-            const off = smith.valueRangeAtMost(u32, 0, @intCast(list.items.len - len));
-            try list.appendSlice(gpa, list.items[off..][0..len]);
-            try std.testing.expectEqualSlices(
-                u8,
-                list.items[off..][0..len],
-                list.items[list.items.len - len ..],
-            );
-        },
-    };
+    try graph.addNode(0);
+    try graph.addNode(1);
+    try graph.addNode(2);
+    try graph.addNode(3);
+    try graph.addNode(4);
+    
+
+    try graph.addEdge(0, 64.0, 1);
+    try graph.addEdge(1, 24.1, 2);
+    try graph.addEdge(2, 44.3, 3);
+    try graph.addEdge(3, 4.4, 4);
+
+    // try graph.addEdge(3, 64.0, 4);
+    try graph.print();
+
+
+
 }
+    
+
