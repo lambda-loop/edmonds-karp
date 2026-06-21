@@ -1,5 +1,5 @@
 
-const std = @import("std");
+const std   = @import("std");
 const Graph = @import("Graph.zig").Graph;
 
 // version with only f64
@@ -12,7 +12,7 @@ pub fn NetworkFlow (comptime Node: type) type {
         s    : Node, // source
         t    : Node, // terminal
         
-        pub fn init (allocator: std.mem.Allocator, source: Node, terminal: Node) @This() {
+        pub fn init (allocator: std.mem.Allocator, source: Node, terminal: Node) !@This() {
             var graph = InternalGraph.init(allocator);
             try graph.addNode(source);
             try graph.addNode(terminal);
@@ -30,7 +30,7 @@ pub fn NetworkFlow (comptime Node: type) type {
         }
 
         pub fn addNode (self: *@This(), node: Node) !void {
-            try self.addNode(node);
+            try self.graph.addNode(node);
         }
         
         pub fn addEdge (
@@ -39,11 +39,11 @@ pub fn NetworkFlow (comptime Node: type) type {
             info: FlowCtx,
             to  : Node
         ) !void { 
-            try self.addEdge(from, info, to);
+            try self.graph.addEdge(from, info, to);
         }
 
         pub fn print (self: @This()) !void {
-            try self.print();
+            try self.graph.print();
         }
     };
 }
