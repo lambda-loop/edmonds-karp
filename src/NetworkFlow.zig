@@ -50,6 +50,35 @@ pub fn NetworkFlow (comptime Node: type) type {
             try self.graph.print();
         }
 
+        pub fn searchForSAP (self: @This()) ?void {
+            var visited = std.AutoHashMap(Node, void).init(self.graph.allocator);
+            const len = self.graph.data.count();
+
+            var to_explore = std.Deque(Node).empty;
+            to_explore.pushBack(self.s);
+            // var currently_visiting = self.s;
+
+            // TODO: better condition when?
+            while (visited.count() < len) {
+                
+                // TODO: if its empty, then use `continue` after resetupping
+                var iter = self.graph.data.get(to_explore.front()).?;
+                while (iter.next()) |node| {
+                    if (!visited.contains(node)) {
+                        visited.put(node);
+                        to_explore.pushBack(self.graph.allocator, node);
+                    }
+
+                }
+
+                to_explore.popFront();
+            }
+
+
+
+
+        }
+
 
 
     };
