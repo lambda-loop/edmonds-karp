@@ -4,7 +4,11 @@ const Graph = @import("Graph.zig").Graph;
 
 // version with only f64
 pub fn NetworkFlow (comptime Node: type) type {
-    const FlowCtx = struct { f64, f64 };
+
+    const FlowCtx = struct { 
+        used      : f64, 
+        available : f64,
+    };
 
     const InternalGraph = Graph(Node, FlowCtx);
     return struct {
@@ -45,5 +49,8 @@ pub fn NetworkFlow (comptime Node: type) type {
         pub fn print (self: @This()) !void {
             try self.graph.print();
         }
+
+
+
     };
 }
