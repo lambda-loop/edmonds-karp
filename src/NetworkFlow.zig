@@ -50,7 +50,7 @@ pub fn NetworkFlow (comptime Node: type) type {
             var keys = std.ArrayList(Node).empty;
             defer keys.deinit(self.graph.allocator);
             var max_outs = std.ArrayList(struct { Node, Node }).empty;
-            defer keys.deinit(self.graph.allocator); // WARNING: works with `.empty`?
+            defer max_outs.deinit(self.graph.allocator); // WARNING: works with `.empty`?
             std.debug.print ("My edges: --------------------------\n", .{});
 
             var iter = self.graph.data.iterator();
@@ -138,6 +138,8 @@ pub fn NetworkFlow (comptime Node: type) type {
             };
 
             var to_explore = std.Deque(Node).empty;
+            defer to_explore.deinit(self.graph.allocator);
+
             try to_explore.pushBack(self.graph.allocator, self.s);
             // var currently_visiting = self.s;
 
@@ -182,6 +184,7 @@ pub fn NetworkFlow (comptime Node: type) type {
         pub fn findPathWithInfo (self: @This()) !?struct { std.ArrayList(Node), f64 } {
             const g: Graph(Node, f64) = try self.searchForSAP() orelse return null;
             var path = std.Deque(Node).empty;
+            defer path.deinit(self.graph.allocator);
 
             var currently_visiting = self.t;
 
@@ -216,8 +219,9 @@ pub fn NetworkFlow (comptime Node: type) type {
             while (true) {
                 const opt_path_info = try self.findPathWithInfo();
                 if (opt_path_info) |path_info| {
-                    const path = path_info.@"0";
+                    var path = path_info.@"0";
                     const min  = path_info.@"1";
+                    defer path.deinit(self.graph.allocator);
 
                     std.debug.print("new path: ", .{});
                     if (Node == u8 ) {
