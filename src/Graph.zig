@@ -1,14 +1,16 @@
 const std = @import("std");
 
-pub fn Graph (comptime Node: type, comptime Edge: type) type {
-    const EdgeData = struct { Edge, Node };
+pub fn Graph (comptime N: type, comptime I: type) type {
     return struct {
-        data: std.AutoHashMap(Node, std.ArrayList(EdgeData)),
+        
+        // OBS: Its enough to represent multiGraphs cause u could always 
+        // represent them with I being some kind of colletion.
+        data: std.AutoHashMap(N, std.AutoHashMap(N, I)),
         allocator: std.mem.Allocator,
 
         pub fn init(allocator: std.mem.Allocator) @This() {
             return .{
-                .data = std.AutoHashMap(Node, std.ArrayList(EdgeData)).init(allocator),
+                .data = std.AutoHashMap(N, std.AutoHashMap(N, I)).init(allocator),
                 .allocator = allocator,
             };
         }
@@ -21,43 +23,45 @@ pub fn Graph (comptime Node: type, comptime Edge: type) type {
             self.data.deinit();
         }
 
-        pub fn addNode (self: *@This(), node: Node) !void {
+        pub fn addNode (self: *@This(), node: N) !void {
             // TODO: provide a better error handling
             if (self.data.contains(node)) unreachable;
             
-            const newHashMap = std.ArrayList(EdgeData).empty;
+            const newHashMap = std.AutoHashMap(N, I).init(self.allocator);
             try self.data.put(node, newHashMap);
         }
         
         pub fn addEdge (
             self: *@This(),
-            from: Node,
-            info: Edge,
-            to  : Node
+            from: N,
+            info: I,
+            to  : N
         ) !void { 
             // TODO: also provide a better error handling right here
             if (!self.data.contains(to) or !self.data.contains(from)) 
                 unreachable;
 
-            const edgesFrom_ptr = self.data.getPtr(from).?;
+            const edge_ptr = self.data.getPtr(from).?;
             // TODO: DO
-            // if (edgesFrom_ptr.contains(.{ info, to })) unreachable;
+            // if (edges.contains(.{ info, to })) unreachable;
 
-            try edgesFrom_ptr.append(self.allocator ,.{info, to});
+            try edge_ptr.put(to, info);
         }
 
         pub fn print (self: @This()) !void {
-            var keys = std.ArrayList(Node).empty;
+            var keys = std.ArrayList(N).empty;
             std.debug.print ("My edges: --------------------------\n", .{});
 
             var iter = self.data.iterator();
             while (iter.next()) |entry| {
                 try keys.append(self.allocator, entry.key_ptr.*);
                 // var inner_iter = entry.value_ptr.keyIterator();
-                for (entry.value_ptr.items) | edgeData | {
+                var iter_inner = entry.value_ptr.iterator();
+                while (iter_inner.next()) |entry_inner| {
                     const from = entry.key_ptr.*;
-                    const with = edgeData.@"0";
-                    const to   = edgeData.@"1";
+                    const with = entry_inner.value_ptr.*;
+                    const to   = entry_inner.key_ptr.*;
+
 
                     std.debug.print (
                         "Im coming from: {any}, with: {any}, to: {any}\n",

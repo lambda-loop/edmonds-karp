@@ -814,5 +814,5 @@
 24525 9846191 1000000000 52c7fac6ad48da05270f91f073a4af79 1 std/os/linux/bpf/helpers.zig
 2972 9845939 1000000000 8c37c40098d399e3b36a078ce1d4e3a1 1 std/crypto/codecs/asn1/der/ArrayListReverse.zig
 2866 44729777 1782251803547569778 af55fc87fa62cf46eda1354b51cb9723 0 /home/jjoaoll/projects/edmonds-karp/src/main.zig
-2700 44729775 1782187675831114203 82d71859e23447341bc91458430b774b 0 /home/jjoaoll/projects/edmonds-karp/src/Graph.zig
-5247 44729776 1782253643603427534 0b27bf4b94c83798461c317aec8eb6db 0 /home/jjoaoll/projects/edmonds-karp/src/NetworkFlow.zig
+2823 44729775 1782303490041572828 bc3a32b6116c2271cd23ac87e521b75c 0 /home/jjoaoll/projects/edmonds-karp/src/Graph.zig
+5816 44729776 1782305474721209828 5ff602d989f8158760f7a3862896bbd5 0 /home/jjoaoll/projects/edmonds-karp/src/NetworkFlow.zig

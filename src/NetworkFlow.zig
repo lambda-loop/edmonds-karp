@@ -70,34 +70,33 @@ pub fn NetworkFlow (comptime Node: type) type {
             while (to_explore.len > 0) {
                 const currentlyVisiting = to_explore.popFront() orelse unreachable;
                 // TODO: if its empty, then use `continue` after resetupping
-                const neighbours = self.graph.data.get(currentlyVisiting).?;
-                for (neighbours.items) |edge| {
-                    const node = edge[1];
+                const neighbours      = self.graph.data.get(currentlyVisiting).?;
+                var   neighbours_iter = neighbours.iterator();
+                while (neighbours_iter.next()) |*entry| {
+                    const node = entry.key_ptr.*;
+                    const info = entry.value_ptr.*;
 
                     if (node == self.t) {
                         try bfs.addEdge (
-                        node, 
-                        edge[0].available, 
-                        currentlyVisiting
-                    );
+                            node, 
+                            info.available,
+                            currentlyVisiting,
+                        );
 
                         return bfs;
                     }
-
+                    
                     if (!visited.contains(node) and
-                    edge[0].available > 0) {
-
+                    info.available > 0) {
                         try visited.put(node, {});
                         try to_explore.pushBack(self.graph.allocator, node);
                         try bfs.addEdge (
-                        node, 
-                        edge[0].available, 
-                        currentlyVisiting
-                    );
-
+                            node, 
+                            info.available, 
+                            currentlyVisiting,
+                        );
                     }
                 }
-
             }
 
             return null;
@@ -111,10 +110,15 @@ pub fn NetworkFlow (comptime Node: type) type {
 
             var currently_visiting = self.t;
 
-            var min = g.data.get(self.t).?.items[0][0];
+            var iter_to_fst = g.data.get(self.t).?.iterator();
+            var min = iter_to_fst.next().?.value_ptr.*;
 
             while (currently_visiting != self.s) {
-                const previousEdge = g.data.get(currently_visiting).?.items[0];
+                const previousEdge = getPreviousEdge: {
+                    var iter_to_previous = g.data.get(currently_visiting).?.iterator();
+                    const entry = iter_to_previous.next().?;
+                    break :getPreviousEdge .{ entry.value_ptr.*, entry.key_ptr.* };
+                };
 
                 if (previousEdge[0] < min) min = previousEdge[0];
                 currently_visiting = previousEdge[1];
