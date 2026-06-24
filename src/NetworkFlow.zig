@@ -47,11 +47,85 @@ pub fn NetworkFlow (comptime Node: type) type {
         }
 
         pub fn print (self: @This()) !void {
-            try self.graph.print();
-        }
+            var keys = std.ArrayList(Node).empty;
+            defer keys.deinit(self.graph.allocator);
+            var max_outs = std.ArrayList(struct { Node, Node }).empty;
+            defer keys.deinit(self.graph.allocator); // WARNING: works with `.empty`?
+            std.debug.print ("My edges: --------------------------\n", .{});
 
+            var iter = self.graph.data.iterator();
+            while (iter.next()) |entry| {
+                try keys.append(self.graph.allocator, entry.key_ptr.*);
+                // var inner_iter = entry.value_ptr.keyIterator();
+                var iter_inner = entry.value_ptr.iterator();
+                while (iter_inner.next()) |entry_inner| {
+                    const from = entry.key_ptr.*;
+                    const with = entry_inner.value_ptr.*;
+                    const to   = entry_inner.key_ptr.*;
+
+                    if (with.used == -1) continue;
+                    if (with.available == 0) {
+                        try max_outs.append(self.graph.allocator, .{from, to});
+                    }
+
+                    if (Node == u8) {
+                        std.debug.print (
+                            "Im coming from: {c}, with: {any}, to: {c}\n",
+                            .{ from, with, to},
+                        );
+                    } else {
+                        std.debug.print (
+                            "Im coming from: {any}, with: {any}, to: {any}\n",
+                            .{ from, with, to},
+                        );
+
+                    }
+                
+                }
+            }
+
+            if (Node == u8) {
+                std.debug.print ("My nodes: --------------------------\n", .{});
+                for (keys.items) |key| {
+                    std.debug.print (
+                        "{c}, ",
+                        .{key},
+                    );
+                }
+            } else {
+
+                std.debug.print ("My nodes: --------------------------\n", .{});
+                for (keys.items) |key| {
+                    std.debug.print (
+                        "{any}, ",
+                        .{key},
+                    );
+                }
+            }
+
+
+            std.debug.print ("\n\nMy MAXEDOUT EDGES: --------------------------\n", .{});
+            if (Node == u8) {
+                for (max_outs.items) |edge| {
+                    std.debug.print (
+                        "{c} -> {c}, ",
+                        .{ edge.@"0", edge.@"1" },
+                    );
+                }
+            } else {
+                for (max_outs.items) |edge| {
+                    std.debug.print (
+                        "{any} -> {any}, ",
+                        .{ edge.@"0", edge.@"1" },
+                    );
+                }
+            }
+
+        }
+        
         pub fn searchForSAP (self: @This()) !?Graph(Node, f64) {
             var visited = std.AutoHashMap(Node, void).init(self.graph.allocator);
+            try visited.put(self.s, {});
             var bfs = init_bfs: { 
                 var bfs = Graph (Node, f64).init(self.graph.allocator);
 
@@ -75,26 +149,27 @@ pub fn NetworkFlow (comptime Node: type) type {
                 while (neighbours_iter.next()) |*entry| {
                     const node = entry.key_ptr.*;
                     const info = entry.value_ptr.*;
+                    if (info.available > 0) {
 
-                    if (node == self.t) {
-                        try bfs.addEdge (
+                        if (node == self.t) {
+                            try bfs.addEdge (
                             node, 
                             info.available,
                             currentlyVisiting,
                         );
 
-                        return bfs;
-                    }
-                    
-                    if (!visited.contains(node) and
-                    info.available > 0) {
-                        try visited.put(node, {});
-                        try to_explore.pushBack(self.graph.allocator, node);
-                        try bfs.addEdge (
+                            return bfs;
+                        }
+
+                        if (!visited.contains(node)) {
+                            try visited.put(node, {});
+                            try to_explore.pushBack(self.graph.allocator, node);
+                            try bfs.addEdge (
                             node, 
                             info.available, 
                             currentlyVisiting,
                         );
+                        }
                     }
                 }
             }
@@ -102,7 +177,7 @@ pub fn NetworkFlow (comptime Node: type) type {
             return null;
         }
 
-        // The deque will not care about the t and s, cause they're trivial.
+        // The `s` and `t` will be here
         // TODO: use array instead of ArrayList
         pub fn findPathWithInfo (self: @This()) !?struct { std.ArrayList(Node), f64 } {
             const g: Graph(Node, f64) = try self.searchForSAP() orelse return null;
@@ -114,6 +189,8 @@ pub fn NetworkFlow (comptime Node: type) type {
             var min = iter_to_fst.next().?.value_ptr.*;
 
             while (currently_visiting != self.s) {
+                try path.pushFront(self.graph.allocator, currently_visiting);
+
                 const previousEdge = getPreviousEdge: {
                     var iter_to_previous = g.data.get(currently_visiting).?.iterator();
                     const entry = iter_to_previous.next().?;
@@ -122,13 +199,11 @@ pub fn NetworkFlow (comptime Node: type) type {
 
                 if (previousEdge[0] < min) min = previousEdge[0];
                 currently_visiting = previousEdge[1];
-
-                if (currently_visiting == self.s) break;
-                try path.pushFront(self.graph.allocator, currently_visiting);
             }
 
             var path_array = std.ArrayList(Node).empty;
             var iter = path.iterator();
+            try path_array.append(self.graph.allocator, self.s);
             while (iter.next()) |node| try path_array.append(self.graph.allocator, node);
 
             return .{ path_array, min };
@@ -144,31 +219,65 @@ pub fn NetworkFlow (comptime Node: type) type {
                     const path = path_info.@"0";
                     const min  = path_info.@"1";
 
-                    
-                    _ = min;
-                    for (0..path.@"0".len-1) |i| {
-                        const from: Node = path.@"0"[i]; 
-                        const to  : Node = path.@"0"[i+1];
-
-                        const edge_ptr = find_edge: {
-                            const from_ptr = try self.graph.data.getPtr(from);
-                            for (&from_ptr.items) |*edge| {
-                                if (edge.*.@"2" == to) 
-                                break :find_edge;
-                            }
-                        };
-                        _ = edge_ptr;
-
-                        
-
-
-
+                    std.debug.print("new path: ", .{});
+                    if (Node == u8 ) {
+                        for (path.items) |item| 
+                            std.debug.print("{c} -> ", .{item}); 
+                    } else { 
+                        for (path.items) |item| 
+                            std.debug.print("{any} -> ", .{item});
                     }
+                    
+
+                    std.debug.print(" with {d:.2}\n", .{min});
+
+                    // update graph
+                    for (0..path.items.len-1) |i| {
+                        const from: Node = path.items[i]; 
+                        const to  : Node = path.items[i+1];
+
+                        const info_ptr = self.graph
+                        .data
+                        .getPtr(from).?
+                        .getPtr(to).?;
+
+                        // if its a red arrow!
+                        if (info_ptr.used == -1) {
+                            info_ptr.available -= min;
+
+                            // cause its red, we know that a white version exists!
+                            const white_ptr = self.graph
+                            .data
+                            .getPtr(to).?
+                            .getPtr(from).?;
+
+                            white_ptr.available += min;
+                            white_ptr.used      -= min;
+
+                        } else { // if its a white arrow!
+                            info_ptr.available -= min;
+                            info_ptr.used      += min;
 
 
+                            // we dont have any garantees about this one cause 
+                            // we had not create all the reds at the beggining..
+                            const opt_red_ptr = self.graph
+                            .data
+                            .getPtr(to).?
+                            .getPtr(from);
+
+                            if (opt_red_ptr) |red_ptr| red_ptr.available += min
+                            else try self.graph.data
+                            .getPtr(to).?
+                            .put(from, .{
+                                .available = min,
+                                .used     = -1,
+                            });
+                        }
+                    }
                 } else break;
 
-
+                // try self.print();
             }
         }
 

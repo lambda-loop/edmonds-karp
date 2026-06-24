@@ -59,29 +59,23 @@ pub fn main() !void {
     defer arena.deinit();
 
     const allocator = arena.allocator();
-    const networkFlow= try homeworkGraph(allocator);
+    var networkFlow= try homeworkGraph(allocator);
 
     // try graph.print();
-    const g = try networkFlow.searchForSAP();
-    if (g) |graph| {
-        try graph.print();
-    }
+    // const g = try networkFlow.searchForSAP();
+    // if (g) |graph| {
+    //     try graph.print();
+    // }
 
-    std.debug.print("\n\n{any}\n", .{try networkFlow.findPathWithInfo()});
-    // var deque = std.Deque(u8).empty;
-    // try deque.pushFront(allocator, 42);
-    // try deque.pushFront(allocator, 16);
-    // try deque.pushFront(allocator, 21);
-    //
-    // std.debug.print(
-    //     "\n\n{any}\n",
-    //     .{ deque.items }
-    // );
-    //
-    //
-    //
-    //
+    // std.debug.print("\n\n{any}\n", .{try networkFlow.findPathWithInfo()});
 
+    // before
+    // try networkFlow.print();
+    //
+    try networkFlow.EdmondsKarp();
+
+    // after
+    try networkFlow.print();
 }
     
 

@@ -63,10 +63,18 @@ pub fn Graph (comptime N: type, comptime I: type) type {
                     const to   = entry_inner.key_ptr.*;
 
 
-                    std.debug.print (
-                        "Im coming from: {any}, with: {any}, to: {any}\n",
-                        .{ from, with, to},
-                    );
+                    if (N == u8) {
+                        std.debug.print (
+                            "Im coming from: {c}, with: {any}, to: {c}\n",
+                            .{ from, with, to},
+                        );
+                    } else {
+                        std.debug.print (
+                            "Im coming from: {any}, with: {any}, to: {any}\n",
+                            .{ from, with, to},
+                        );
+
+                    }
                 
                 }
             }
